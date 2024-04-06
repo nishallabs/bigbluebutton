@@ -1,0 +1,409 @@
+trigger:
+- develop
+
+pool:
+  vmImage: 'ubuntu-latest'
+
+variables:
+  GIT_STRATEGY: fetch
+
+stages:
+  - stage: ChangeDetection
+    displayName: 'Change Detection'
+    jobs:
+    - job: DetectChanges
+      displayName: 'Detect Package Changes'
+      container: bigbluebutton/bbb-build:v3.0.x-release--2023-09-26-152524
+      steps:
+      - script: build/change_detection.sh
+        displayName: 'Detect Changes'
+      - publish: packages_to_skip.txt
+        artifact: packagesToSkip
+
+  - stage: GetExternalDependencies
+    displayName: 'Get External Dependencies'
+    jobs:
+    - job: FetchDependencies
+      displayName: 'Fetch External Dependencies'
+      steps:
+      - script: build/get_external_dependencies.sh
+        displayName: 'Get Dependencies'
+
+      # Publish each directory as a separate artifact for easier handling in later stages
+      - task: PublishPipelineArtifact@1
+        inputs:
+          targetPath: 'bbb-etherpad/'
+          artifact: 'Etherpad'
+      - task: PublishPipelineArtifact@1
+        inputs:
+          targetPath: 'bbb-webhooks/'
+          artifact: 'Webhooks'
+      - task: PublishPipelineArtifact@1
+        inputs:
+          targetPath: 'bbb-webrtc-sfu/'
+          artifact: 'WebRTC-SFU'
+      - task: PublishPipelineArtifact@1
+        inputs:
+          targetPath: 'bbb-webrtc-recorder/'
+          artifact: 'WebRTC-Recorder'
+      - task: PublishPipelineArtifact@1
+        inputs:
+          targetPath: 'freeswitch/'
+          artifact: 'FreeSwitch'
+      - task: PublishPipelineArtifact@1
+        inputs:
+          targetPath: 'bbb-pads/'
+          artifact: 'Pads'
+      - task: PublishPipelineArtifact@1
+        inputs:
+          targetPath: 'bbb-playback/'
+          artifact: 'Playback'
+      - task: PublishPipelineArtifact@1
+        inputs:
+          targetPath: 'bbb-transcription-controller/'
+          artifact: 'TranscriptionController'
+
+
+  - stage: Build
+    displayName: 'Build Packages'
+    jobs:
+    # Template for Build jobs, replicate for each package
+    - job: BBBAppsAkkaBuild
+      displayName: 'Build bbb-apps-akka'
+      steps:
+      - checkout: self
+      - download: current
+        artifact: packagesToSkip
+      - script: build/setup-inside-docker.sh bbb-apps-akka
+        displayName: 'Build bbb-apps-akka'
+      - publish: artifacts/*.deb
+        artifact: BBBAppsAkkaDebs
+
+    # Example for another build job
+    - job: BBBConfigBuild
+      displayName: 'Build bbb-config'
+      steps:
+      - checkout: self
+      - download: current
+        artifact: packagesToSkip
+      - script: build/setup-inside-docker.sh bbb-config
+        displayName: 'Build bbb-config'
+      - publish: artifacts/*.deb
+        artifact: BBBConfigDebs
+
+    - job: BBBEtherpadBuild
+      displayName: 'Build bbb-etherpad'
+      steps:
+      - checkout: self
+      - download: current
+        artifact: packagesToSkip
+      - script: build/setup-inside-docker.sh bbb-etherpad
+        displayName: 'Build bbb-etherpad'
+      - publish: artifacts/*.deb
+        artifact: BBBEtherpadDebs
+
+    - job: BBBFreeswitchCoreBuild
+      displayName: 'Build bbb-freeswitch-core'
+      steps:
+      - checkout: self
+      - download: current
+        artifact: packagesToSkip
+      - script: build/setup-inside-docker.sh bbb-freeswitch-core
+        displayName: 'Build bbb-freeswitch-core'
+      - publish: artifacts/*.deb
+        artifact: BBBFreeswitchCoreDebs
+
+    - job: BBBFreeswitchSoundsBuild
+      displayName: 'Build bbb-freeswitch-sounds'
+      steps:
+      - checkout: self
+      - download: current
+        artifact: packagesToSkip
+      - script: build/setup-inside-docker.sh bbb-freeswitch-sounds
+        displayName: 'Build bbb-freeswitch-sounds'
+      - publish: artifacts/*.deb
+        artifact: BBBFreeswitchSoundsDebs
+
+    - job: BBBFseslAkkaBuild
+      displayName: 'Build bbb-fsesl-akka'
+      steps:
+      - checkout: self
+      - download: current
+        artifact: packagesToSkip
+      - script: build/setup-inside-docker.sh bbb-fsesl-akka
+        displayName: 'Build bbb-fsesl-akka'
+      - publish: artifacts/*.deb
+        artifact: BBBFseslAkkaDebs
+
+    - job: BBBHtml5Build
+      displayName: 'Build bbb-html5'
+      steps:
+      - checkout: self
+      - download: current
+        artifact: packagesToSkip
+      - script: build/setup-inside-docker.sh bbb-html5
+        displayName: 'Build bbb-html5'
+      - publish: artifacts/*.deb
+        artifact: BBBHtml5Debs
+
+    - job: BBBGraphqlServerBuild
+      displayName: 'Build bbb-graphql-server'
+      steps:
+      - checkout: self
+      - download: current
+        artifact: packagesToSkip
+      - script: build/setup-inside-docker.sh bbb-graphql-server
+        displayName: 'Build bbb-graphql-server'
+      - publish: artifacts/*.deb
+        artifact: BBBGraphqlServerDebs
+
+    - job: BBBLearningDashboardBuild
+      displayName: 'Build bbb-learning-dashboard'
+      steps:
+      - checkout: self
+      - download: current
+        artifact: packagesToSkip
+      - script: build/setup-inside-docker.sh bbb-learning-dashboard
+        displayName: 'Build bbb-learning-dashboard'
+      - publish: artifacts/*.deb
+        artifact: BBBLearningDashboardDebs
+
+    - job: BBBLibreofficeDockerBuild
+      displayName: 'Build bbb-libreoffice-docker'
+      steps:
+      - checkout: self
+      - download: current
+        artifact: packagesToSkip
+      - script: build/setup-inside-docker.sh bbb-libreoffice-docker
+        displayName: 'Build bbb-libreoffice-docker'
+      - publish: artifacts/*.deb
+        artifact: BBBLibreofficeDockerDebs
+
+    - job: BBBMkcleanBuild
+      displayName: 'Build bbb-mkclean'
+      steps:
+      - checkout: self
+      - download: current
+        artifact: packagesToSkip
+      - script: build/setup-inside-docker.sh bbb-mkclean
+        displayName: 'Build bbb-mkclean'
+      - publish: artifacts/*.deb
+        artifact: BBBMkcleanDebs
+
+    - job: BBBPadsBuild
+      displayName: 'Build bbb-pads'
+      steps:
+      - checkout: self
+      - download: current
+        artifact: packagesToSkip
+      - script: build/setup-inside-docker.sh bbb-pads
+        displayName: 'Build bbb-pads'
+      - publish: artifacts/*.deb
+        artifact: BBBPadsDebs
+
+    - job: BBBPlaybackBuild
+      displayName: 'Build bbb-playback'
+      steps:
+      - checkout: self
+      - download: current
+        artifact: packagesToSkip
+      - script: build/setup-inside-docker.sh bbb-playback
+        displayName: 'Build bbb-playback'
+      - publish: artifacts/*.deb
+        artifact: BBBPlaybackDebs
+
+    - job: BBBPlaybackNotesBuild
+      displayName: 'Build bbb-playback-notes'
+      steps:
+      - checkout: self
+      - download: current
+        artifact: packagesToSkip
+      - script: build/setup-inside-docker.sh bbb-playback-notes
+        displayName: 'Build bbb-playback-notes'
+      - publish: artifacts/*.deb
+        artifact: BBBPlaybackNotesDebs
+
+    - job: BBBPlaybackPodcastBuild
+      displayName: 'Build bbb-playback-podcast'
+      steps:
+      - checkout: self
+      - download: current
+        artifact: packagesToSkip
+      - script: build/setup-inside-docker.sh bbb-playback-podcast
+        displayName: 'Build bbb-playback-podcast'
+      - publish: artifacts/*.deb
+        artifact: BBBPlaybackPodcastDebs
+
+    - job: BBBPlaybackPresentationBuild
+      displayName: 'Build bbb-playback-presentation'
+      steps:
+      - checkout: self
+      - download: current
+        artifact: packagesToSkip
+      - script: build/setup-inside-docker.sh bbb-playback-presentation
+        displayName: 'Build bbb-playback-presentation'
+      - publish: artifacts/*.deb
+        artifact: BBBPlaybackPresentationDebs
+
+    - job: BBBPlaybackScreenshareBuild
+      displayName: 'Build bbb-playback-screenshare'
+      steps:
+      - checkout: self
+      - download: current
+        artifact: packagesToSkip
+      - script: build/setup-inside-docker.sh bbb-playback-screenshare
+        displayName: 'Build bbb-playback-screenshare'
+      - publish: artifacts/*.deb
+        artifact: BBBPlaybackScreenshareDebs
+
+    - job: BBBRecordCoreBuild
+      displayName: 'Build bbb-record-core'
+      steps:
+      - checkout: self
+      - download: current
+        artifact: packagesToSkip
+      - script: build/setup-inside-docker.sh bbb-record-core
+        displayName: 'Build bbb-record-core'
+      - publish: artifacts/*.deb
+        artifact: BBBRecordCoreDebs
+
+    - job: BBBWebBuild
+      displayName: 'Build bbb-web'
+      steps:
+      - checkout: self
+      - download: current
+        artifact: packagesToSkip
+      - script: build/setup-inside-docker.sh bbb-web
+        displayName: 'Build bbb-web'
+      - publish: artifacts/*.deb
+        artifact: BBBWebDebs
+
+    - job: BBBWebhooksBuild
+      displayName: 'Build bbb-webhooks'
+      steps:
+      - checkout: self
+      - download: current
+        artifact: packagesToSkip
+      - script: build/setup-inside-docker.sh bbb-webhooks
+        displayName: 'Build bbb-webhooks'
+      - publish: artifacts/*.deb
+        artifact: BBBWebhooksDebs
+
+    - job: BBBWebrtcSfuBuild
+      displayName: 'Build bbb-webrtc-sfu'
+      steps:
+      - checkout: self
+      - download: current
+        artifact: packagesToSkip
+      - script: build/setup-inside-docker.sh bbb-webrtc-sfu
+        displayName: 'Build bbb-webrtc-sfu'
+      - publish: artifacts/*.deb
+        artifact: BBBWebrtcSfuDebs
+
+    - job: BBBWebrtcRecorderBuild
+      displayName: 'Build bbb-webrtc-recorder'
+      steps:
+      - checkout: self
+      - download: current
+        artifact: packagesToSkip
+      - script: build/setup-inside-docker.sh bbb-webrtc-recorder
+        displayName: 'Build bbb-webrtc-recorder'
+      - publish: artifacts/*.deb
+        artifact: BBBWebrtcRecorderDebs
+
+    - job: BBBLivekitBuild
+      displayName: 'Build bbb-livekit'
+      steps:
+      - checkout: self
+      - download: current
+        artifact: packagesToSkip
+      - script: build/setup-inside-docker.sh bbb-livekit
+        displayName: 'Build bbb-livekit'
+      - publish: artifacts/*.deb
+        artifact: BBBLivekitDebs
+
+    - job: BBBTranscriptionControllerBuild
+      displayName: 'Build bbb-transcription-controller'
+      steps:
+      - checkout: self
+      - download: current
+        artifact: packagesToSkip
+      - script: build/setup-inside-docker.sh bbb-transcription-controller
+        displayName: 'Build bbb-transcription-controller'
+      - publish: artifacts/*.deb
+        artifact: BBBTranscriptionControllerDebs
+
+    - job: BigBlueButtonBuild
+      displayName: 'Build bigbluebutton'
+      steps:
+      - checkout: self
+      - download: current
+        artifact: packagesToSkip
+      - script: build/setup-inside-docker.sh bigbluebutton
+        displayName: 'Build bigbluebutton'
+      - publish: artifacts/*.deb
+        artifact: BigBlueButtonDebs
+
+  - stage: PushPackages
+    displayName: 'Push Packages'
+    jobs:
+    - job: UploadPackages
+      displayName: 'Upload Built Packages'
+      steps:
+      - checkout: self
+      # Download all artifacts
+      - download: current
+        artifact: BBBAppsAkkaDebs
+      - download: current
+        artifact: BBBConfigDebs
+      - download: current
+        artifact: BBBEtherpadDebs
+      - download: current
+        artifact: BBBFreeswitchCoreDebs
+      - download: current
+        artifact: BBBFreeswitchSoundsDebs
+      - download: current
+        artifact: BBBFseslAkkaDebs
+      - download: current
+        artifact: BBBHtml5Debs
+      - download: current
+        artifact: BBBGraphqlMiddlewareDebs
+      - download: current
+        artifact: BBBGraphqlServerDebs
+      - download: current
+        artifact: BBBLearningDashboardDebs
+      - download: current
+        artifact: BBBLibreofficeDockerDebs
+      - download: current
+        artifact: BBBMkcleanDebs
+      - download: current
+        artifact: BBBPadsDebs
+      - download: current
+        artifact: BBBPlaybackDebs
+      - download: current
+        artifact: BBBPlaybackNotesDebs
+      - download: current
+        artifact: BBBPlaybackPodcastDebs
+      - download: current
+        artifact: BBBPlaybackPresentationDebs
+      - download: current
+        artifact: BBBPlaybackScreenshareDebs
+      - download: current
+        artifact: BBBRecordCoreDebs
+      - download: current
+        artifact: BBBWebDebs
+      - download: current
+        artifact: BBBWebhooksDebs
+      - download: current
+        artifact: BBBWebrtcSfuDebs
+      - download: current
+        artifact: BBBWebrtcRecorderDebs
+      - download: current
+        artifact: BBBLivekitDebs
+      - download: current
+        artifact: BBBTranscriptionControllerDebs
+      - download: current
+        artifact: BigBlueButtonDebs
+      - script: build/push_packages.sh
+        displayName: 'Push Packages to Server'
+
